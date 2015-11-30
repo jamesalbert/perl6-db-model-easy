@@ -22,7 +22,7 @@ class DB::Model::Easy::Row {
   ## Construct a Row
   method init (:$model!, :%data!, :$new-item?) {
     my %attrs = self.get-attrs;
-    if ! %attrs.exists('fields') { die "no @.fields defined in Row class."; }
+    unless %attrs{'fields'}:exists { die "no @.fields defined in Row class."; }
     $!model = $model;
     $!new-item = $new-item;
     for @.fields -> $field {
@@ -34,14 +34,14 @@ class DB::Model::Easy::Row {
         if $fieldopts ~~ Str {
           $data_name = $fieldopts;
         }
-        elsif $fieldopts ~~ Hash && $fieldopts.exists('column') {
+        elsif $fieldopts ~~ Hash && ($fieldopts{'column'}:exists) {
           $data_name = $fieldopts<column>;
         }
         else {
           $data_name = $attr_name;
         }
 
-        if $fieldopts ~~ Hash && $fieldopts.exists('primary') {
+        if $fieldopts ~~ Hash && ($fieldopts{'primary'}:exists) {
           $!primary-key = $data_name;
         }
       }
@@ -54,7 +54,7 @@ class DB::Model::Easy::Row {
       }
 
       ## We only set the field if it exists as a column and an attribute.
-      if %attrs.exists($attr_name) && %data.exists($data_name) {
+      if (%attrs{$attr_name}:exists) && (%data{$data_name}:exists) {
         my $value = %data{$data_name};
         my $load = "on-load-$attr_name";
         if self.can($load) {
@@ -93,7 +93,7 @@ class DB::Model::Easy::Row {
         if $fieldopts ~~ Str {
           $data_name = $fieldopts;
         }
-        elsif $fieldopts ~~ Hash && $fieldopts.exists('column') {
+        elsif $fieldopts ~~ Hash && ($fieldopts{'column'}:exists) {
           $data_name = $fieldopts<column>;
         }
         else {
@@ -108,7 +108,7 @@ class DB::Model::Easy::Row {
         die "unknown field type: {$field.WHAT}";
       }
 
-      if %attrs.exists($attr_name) {
+      if %attrs{$attr_name}:exists {
         my $value = %attrs{$attr_name}.get_value(self);
         my $save = "on-save-$attr_name";
         if self.can($save) {
@@ -155,7 +155,7 @@ class DB::Model::Easy::Row {
       $sql = "INSERT INTO {$.model.table} ($fields) VALUES ($values);";
     }
     else {
-      $sql = "UPDATE {$.model.table} SET";
+      $sql = "UPDATE {$.model.model.table} SET";
       my @set;
       for @fields -> $field {
         @set.push: " $field=?";
@@ -163,7 +163,7 @@ class DB::Model::Easy::Row {
       $sql ~= @set.join(',');
       $sql ~= " WHERE {$!primary-key} = $primary-value";
     }
-    my $sth = $.model.prepare($sql);
+    my $sth = $.model.model.prepare($sql);
     $sth.execute(|@values);
 
     $!new-item = False;
